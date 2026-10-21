@@ -28,7 +28,7 @@ This QAT toolkit / repository contains three parts:
 | a | Verify that the form contains labels in proper order and the text boxes are writable. | The form contains labels in this order: "Target's First Name", "Target's Last Name", "Target's Government Position", and "Target's Location"; all text boxes are writable. | The form contains labels in this order: "Target's First Name", "Target's Last Name", "Target's Government Position", and "Target's Location"; all text boxes are writable. |
 | b | Verify the "Send Wish Note" button. | The "Send Wish Note" button changes color on hover and is not disabled. | The "Send Wish Note" button changes color on hover and is not disabled. |
 | c | Enter test data on their respective fields. | The respective fields accept data entries of valid test data. | The respective fields accept data entries of valid test data. |
-| d | Click the "Send Wish Note" button; a modal will appear. | Pending Execution | Pending Execution |
+| d | Click the "Send Wish Note" button; a modal will appear. | A modal dialog appears displaying the submitted information. | A modal dialog appeared on screen presenting the entered details. |
 | e | Verify that the modal contains the same entry as your test data. | Pending Execution | Pending Execution |
 | f | Click the Cancel button. | Pending Execution | Pending Execution |
 | g | Click "Send Wish Note" again, then click "Confirm and Send" in the modal box. | Pending Execution | Pending Execution |
