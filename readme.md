@@ -29,7 +29,7 @@ This QAT toolkit / repository contains three parts:
 | b | Verify the "Send Wish Note" button. | The "Send Wish Note" button changes color on hover and is not disabled. | The "Send Wish Note" button changes color on hover and is not disabled. |
 | c | Enter test data on their respective fields. | The respective fields accept data entries of valid test data. | The respective fields accept data entries of valid test data. |
 | d | Click the "Send Wish Note" button; a modal will appear. | A modal dialog appears displaying the submitted information. | A modal dialog appeared on screen presenting the entered details. |
-| e | Verify that the modal contains the same entry as your test data. | Pending Execution | Pending Execution |
+| e | Verify that the modal contains the same entry as your test data. | The modal displays exact matching data for First Name, Last Name, Government Position, and Location. | The modal displayed the exact matching entries for all four fields. |
 | f | Click the Cancel button. | Pending Execution | Pending Execution |
 | g | Click "Send Wish Note" again, then click "Confirm and Send" in the modal box. | Pending Execution | Pending Execution |
 | h | Verify that a successful entry message shows in the Data Entry page. | Pending Execution | Pending Execution |
