@@ -30,7 +30,7 @@ This QAT toolkit / repository contains three parts:
 | c | Enter test data on their respective fields. | The respective fields accept data entries of valid test data. | The respective fields accept data entries of valid test data. |
 | d | Click the "Send Wish Note" button; a modal will appear. | A modal dialog appears displaying the submitted information. | A modal dialog appeared on screen presenting the entered details. |
 | e | Verify that the modal contains the same entry as your test data. | The modal displays exact matching data for First Name, Last Name, Government Position, and Location. | The modal displayed the exact matching entries for all four fields. |
-| f | Click the Cancel button. | Pending Execution | Pending Execution |
-| g | Click "Send Wish Note" again, then click "Confirm and Send" in the modal box. | Pending Execution | Pending Execution |
-| h | Verify that a successful entry message shows in the Data Entry page. | Pending Execution | Pending Execution |
-| i | Verify that the test data shows in the database. | Pending Execution | Pending Execution |
+| f | Click the Cancel button. | The modal closes without submitting the form data. | The modal dismissed properly without sending data. |
+| g | Click "Send Wish Note" again, then click "Confirm and Send" in the modal box. | Form submits data to the backend script. | Form submitted successfully via POST request. |
+| h | Verify that a successful entry message shows in the Data Entry page. | "Success! The wish note has been sent." message is displayed. | The message "Success! The wish note has been sent." was displayed on top of the page. |
+| i | Verify that the test data shows in the database. | Database table `main_corrupt_politicians` records all four fields correctly including `Location`. | Database query output shows `FirstName`, `LastName`, and `GovPosition` inserted successfully, but `Location` remains `NULL` because the backend PHP script omits the column from the `INSERT` query:<br><br>`+----+-----------+----------+-----------------+----------+`<br>`| id | FirstName | LastName | GovPosition     | Location |`<br>`+----+-----------+----------+-----------------+----------+`<br>`|  1 | Juan      | Dela Cruz| Governor        | NULL     |`<br>`+----+-----------+----------+-----------------+----------+` |
