@@ -1,20 +1,28 @@
 <?php
-// ---------- Database connection (local MariaDB/MySQL) ----------
+// ---------------------------------------------------------------
+// Database connection (local MariaDB / MySQL)
+// ---------------------------------------------------------------
 $servername = "localhost";
 $username   = "root";
 $password   = "";
 $dbname     = "birthday_wishnote";
 
+// Make mysqli return false/errors instead of throwing exceptions,
+// so our fallback error messages below can be displayed.
+mysqli_report(MYSQLI_REPORT_OFF);
+
 $conn = new mysqli($servername, $username, $password, $dbname);
-$message = "";
-$messageType = "";
+
+$successMessage = "";
+$errorMessage   = "";
 
 if ($conn->connect_error) {
-    $message = "Error: Could not connect to the database.";
-    $messageType = "error";
+    $errorMessage = "Database connection failed: " . htmlspecialchars($conn->connect_error);
 }
 
-// ---------- Handle POST request ----------
+// ---------------------------------------------------------------
+// Handle the POST request
+// ---------------------------------------------------------------
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !$conn->connect_error) {
     // Capture all four variables from the form
     $FirstName   = trim($_POST["FirstName"] ?? "");
@@ -22,142 +30,202 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !$conn->connect_error) {
     $GovPosition = trim($_POST["GovPosition"] ?? "");
     $Location    = trim($_POST["Location"] ?? "");
 
-    /*
-     * ======================= INTENTIONAL FLAW =======================
-     * The form collects four fields, including Location. However, the
-     * INSERT statement below deliberately OMITS the Location column,
-     * both in the SQL string and in bind_param(). As a result, the page
-     * shows "Success!" but the Location value is NEVER saved in the
-     * database. A QA tester can only find this by checking MySQL.
-     * =================================================================
-     */
-    $sql = "INSERT INTO main_corrupt_politicians (FirstName, LastName, GovPosition) VALUES (?, ?, ?)";
+    // ===========================================================
+    // INTENTIONAL FLAW (for QA testing purposes):
+    // The Location value is captured above, but it is deliberately
+    // OMITTED from both the INSERT statement (no Location column)
+    // and from bind_param(). Only FirstName, LastName and
+    // GovPosition are saved, so Location data is silently lost.
+    // Testers should catch this when comparing the form entries
+    // against the database contents.
+    // ===========================================================
+    $sql  = "INSERT INTO main_corrupt_politicians (FirstName, LastName, GovPosition) VALUES (?, ?, ?)";
     $stmt = $conn->prepare($sql);
 
-    if ($stmt) {
-        // Only 3 values are bound. $Location is intentionally left out.
-        $stmt->bind_param("sss", $FirstName, $LastName, $GovPosition);
+    if ($stmt === false) {
+        // Fallback error message if the query fails to prepare
+        $errorMessage = "Error: could not prepare the query. " . htmlspecialchars($conn->error);
+    } else {
+        $stmt->bind_param("sss", $FirstName, $LastName, $GovPosition); // Location intentionally not bound
         if ($stmt->execute()) {
-            $message = "Success! The wish note has been sent.";
-            $messageType = "success";
+            $successMessage = "Success! The wish note has been sent.";
         } else {
-            $message = "Error: The wish note could not be saved.";
-            $messageType = "error";
+            $errorMessage = "Error: could not save the wish note. " . htmlspecialchars($stmt->error);
         }
         $stmt->close();
-    } else {
-        // Fallback error if the query fails to prepare
-        $message = "Error: The query failed to prepare.";
-        $messageType = "error";
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kara David's Wish Note</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; padding: 20px; min-height: 100vh;
-    background: #f0f2f5; font-family: Arial, Helvetica, sans-serif;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .card {
-    background: #fff; width: 100%; max-width: 460px; padding: 30px;
-    border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-  }
-  h2 { margin: 0 0 20px; color: #1e73be; text-align: center; }
-  label { display: block; margin: 14px 0 6px; color: #333; font-weight: bold; font-size: 14px; }
-  input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1px solid #c5cdd8;
-    border-radius: 4px; font-size: 15px;
-  }
-  input[type="text"]:focus { outline: none; border-color: #1e73be; box-shadow: 0 0 0 2px rgba(30,115,190,0.2); }
-  .btn {
-    padding: 11px 18px; border: none; border-radius: 4px;
-    font-size: 15px; cursor: pointer; color: #fff; background: #1e73be;
-    transition: background 0.2s;
-  }
-  .btn:hover { background: #155a96; }
-  .btn-main { width: 100%; margin-top: 22px; }
-  .btn-cancel { background: #8a94a0; }
-  .btn-cancel:hover { background: #6e7781; }
-  .msg { padding: 12px; border-radius: 4px; margin-bottom: 18px; font-size: 14px; text-align: center; }
-  .msg.success { background: #e3f4e6; color: #1b6b2b; border: 1px solid #b6e0bd; }
-  .msg.error { background: #fde8e8; color: #a12020; border: 1px solid #f3b9b9; }
-  .overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    align-items: center; justify-content: center; padding: 20px; z-index: 10;
-  }
-  .overlay.show { display: flex; }
-  .modal { background: #fff; width: 100%; max-width: 400px; padding: 24px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-  .modal h3 { margin: 0 0 14px; color: #1e73be; }
-  .modal p { margin: 8px 0; font-size: 14px; color: #333; word-break: break-word; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kara David's Wish Note</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: #f0f2f5;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #2c3e50;
+        }
+        .card {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 28px 24px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+        }
+        h2 {
+            margin: 0 0 20px;
+            text-align: center;
+            color: #1e88e5;
+        }
+        label {
+            display: block;
+            margin: 14px 0 6px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+        }
+        .btn {
+            border: none;
+            border-radius: 4px;
+            padding: 11px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            color: #fff;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: #1e88e5; width: 100%; margin-top: 22px; }
+        .btn-primary:hover { background: #1565c0; }
+        .btn-cancel { background: #90a4ae; }
+        .btn-cancel:hover { background: #78909c; }
+        .btn-confirm { background: #1e88e5; }
+        .btn-confirm:hover { background: #1565c0; }
+        .msg {
+            padding: 12px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .msg-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .msg-error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+
+        /* Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 100;
+        }
+        .overlay.show { display: flex; }
+        .modal {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+        .modal h3 { margin: 0 0 14px; color: #1e88e5; }
+        .modal p { margin: 8px 0; font-size: 14px; word-wrap: break-word; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    </style>
 </head>
 <body>
-<div class="card">
-  <h2>Kara David's Wish Note</h2>
+    <div class="card">
+        <h2>Kara David's Wish Note</h2>
 
-  <?php if ($message): ?>
-    <div class="msg <?php echo $messageType; ?>"><?php echo htmlspecialchars($message); ?></div>
-  <?php endif; ?>
+        <?php if ($successMessage): ?>
+            <div class="msg msg-success"><?php echo htmlspecialchars($successMessage); ?></div>
+        <?php endif; ?>
+        <?php if ($errorMessage): ?>
+            <div class="msg msg-error"><?php echo $errorMessage; ?></div>
+        <?php endif; ?>
 
-  <form id="wishForm" method="POST" action="">
-    <label for="FirstName">Target's First Name</label>
-    <input type="text" id="FirstName" name="FirstName" maxlength="30" required>
+        <form id="wishForm" method="POST" action="">
+            <label for="FirstName">Target's First Name</label>
+            <input type="text" id="FirstName" name="FirstName" maxlength="30" required>
 
-    <label for="LastName">Target's Last Name</label>
-    <input type="text" id="LastName" name="LastName" maxlength="30" required>
+            <label for="LastName">Target's Last Name</label>
+            <input type="text" id="LastName" name="LastName" maxlength="30" required>
 
-    <label for="GovPosition">Target's Government Position</label>
-    <input type="text" id="GovPosition" name="GovPosition" maxlength="20" required>
+            <label for="GovPosition">Target's Government Position</label>
+            <input type="text" id="GovPosition" name="GovPosition" maxlength="20" required>
 
-    <label for="Location">Target's Location</label>
-    <input type="text" id="Location" name="Location" maxlength="40">
+            <label for="Location">Target's Location</label>
+            <input type="text" id="Location" name="Location" maxlength="40">
 
-    <button type="submit" class="btn btn-main">Send Wish Note</button>
-  </form>
-</div>
-
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3>Verify Target Data</h3>
-    <p><strong>First Name:</strong> <span id="vFirst"></span></p>
-    <p><strong>Last Name:</strong> <span id="vLast"></span></p>
-    <p><strong>Government Position:</strong> <span id="vPos"></span></p>
-    <p><strong>Location:</strong> <span id="vLoc"></span></p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
-      <button type="button" class="btn" id="confirmBtn">Confirm &amp; Send</button>
+            <button type="submit" class="btn btn-primary">Send Wish Note</button>
+        </form>
     </div>
-  </div>
-</div>
 
-<script>
-  var form = document.getElementById("wishForm");
-  var overlay = document.getElementById("overlay");
+    <!-- Verification modal -->
+    <div class="overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>Verify Target Data</h3>
+            <p><strong>First Name:</strong> <span id="mFirstName"></span></p>
+            <p><strong>Last Name:</strong> <span id="mLastName"></span></p>
+            <p><strong>Government Position:</strong> <span id="mGovPosition"></span></p>
+            <p><strong>Location:</strong> <span id="mLocation"></span></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
+                <button type="button" class="btn btn-confirm" id="confirmBtn">Confirm &amp; Send</button>
+            </div>
+        </div>
+    </div>
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault(); // intercept the submission
-    document.getElementById("vFirst").textContent = form.FirstName.value;
-    document.getElementById("vLast").textContent  = form.LastName.value;
-    document.getElementById("vPos").textContent   = form.GovPosition.value;
-    document.getElementById("vLoc").textContent   = form.Location.value || "(not provided)";
-    overlay.classList.add("show");
-  });
+    <script>
+        var form    = document.getElementById("wishForm");
+        var overlay = document.getElementById("modalOverlay");
 
-  document.getElementById("cancelBtn").addEventListener("click", function () {
-    overlay.classList.remove("show");
-  });
+        // Intercept the submission and show the verification modal
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            document.getElementById("mFirstName").textContent   = document.getElementById("FirstName").value;
+            document.getElementById("mLastName").textContent    = document.getElementById("LastName").value;
+            document.getElementById("mGovPosition").textContent = document.getElementById("GovPosition").value;
+            document.getElementById("mLocation").textContent    = document.getElementById("Location").value || "(none)";
+            overlay.classList.add("show");
+        });
 
-  document.getElementById("confirmBtn").addEventListener("click", function () {
-    form.submit(); // bypasses the interception
-  });
-</script>
+        // Cancel closes the modal
+        document.getElementById("cancelBtn").addEventListener("click", function () {
+            overlay.classList.remove("show");
+        });
+
+        // Confirm bypasses the interception and posts the form
+        document.getElementById("confirmBtn").addEventListener("click", function () {
+            form.submit();
+        });
+    </script>
 </body>
 </html>
+<?php
+if (isset($conn) && !$conn->connect_error) {
+    $conn->close();
+}
+?>
